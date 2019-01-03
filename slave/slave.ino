@@ -1,9 +1,12 @@
+ #define BUFFER_LENGTH 64
  #define PACKET_LENGTH 6
 
   //setup some global vars
   char id = '3';
   int state = 0;
-  uint8_t color_array[3] = {255, 255, 255}; //initialize to white
+  uint8_t color_array[3] = {0, 0, 0}; //initialize to white
+  boolean data_available = false;
+
 
 void setup() {
   //configure and initialize gpio 6,7, and 8
@@ -21,14 +24,18 @@ void setup() {
 void loop() {  
   //if serial device is available, read in the data
   if (Serial.available() > 0){
-    Serial.println("Entered Serial comm.");
-    analogWrite(6, 0);
-    analogWrite(7, 0);
-    analogWrite(8, 0);
-    readColorMessage(color_array);
-    analogWrite(6, color_array[0]);
-    analogWrite(7, color_array[1]);
-    analogWrite(8, color_array[2]);
+    try{
+      serialRcv();
+      analogWrite(6, color_array[0]);
+      analogWrite(7, color_array[1]);
+      analogWrite(8, color_array[2]);
+    }
+    //if we receive an exception that must be because serial data became available
+    //but didn't match an appropriately expected packet. If this occurs signal an
+    //error but don't stop the arduino
+    catch (const char* msg){
+      cerr << msg << endl;
+    }
   }//end of serial available check
 
   
@@ -86,4 +93,55 @@ void readColorMessage(uint8_t* color_array){
   Serial.println(color_array[1], DEC);
   Serial.println(color_array[2], DEC);
   return;
+}
+
+//receive data from master and return its contents
+uint8_t* serialRcv(void){
+  //initialize neccesary variables
+  boolean rcv_in_progress = false;
+  uint8_t index = 0;
+  uint8_t rcvd_data[BUFFER_LENGTH];
+  uint8_t return_buffer[PACKET_LENGTH];
+  uint8_t rb;
+
+  //loop so long as serial data is still available
+  //and all of it hasn't been collected yet
+  while ((Serial.available() > 0) && (data_available == false) && (index < PACKET_LENGTH)){
+    //capture data right away
+    rb = Serial.read();
+
+    //are we actively reading data? if so, continue processing it
+    if (rcv_in_progress){
+      //check if the datum is the end byte and close up shop if so
+      if (rb == 0xBB){
+        rcv_in_progress = false;
+        data_available = true;
+      }
+
+      //otherwise save the data and continue
+
+    }
+
+    //if not then is the byte we just read the start byte?
+    else if (rb == 0xAA){
+      //acknowledge the start bit and start looking for incoming data
+      rcv_in_progress = true;
+    }
+
+    //do nothing if we receive data thats not the start bit and if we are not
+    //actively seeking additional data. What this will cause is that anytime
+    //we receive serial data and the buffer is full, the arduino will sift
+    //through the data until a start bit is found in case a packet was properly
+    //sent. Otherwise the function should throw an exception.
+
+  }
+
+  if (data_available){
+    return return_buffer;
+  }
+  else{
+    //we should only get here if the Arduino doesn't find any proper data after
+    //this function is triggered. If so, throw an exception alerting this
+    throw "rcvData triggered but no proper data was found!";
+  }
 }
