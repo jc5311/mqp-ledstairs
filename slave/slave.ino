@@ -1,5 +1,6 @@
  #define BUFFER_LENGTH 64
  #define PACKET_LENGTH 6
+ #define DATA_LENGTH 4
 
   //setup some global vars
   char id = '3';
@@ -99,14 +100,15 @@ void readColorMessage(uint8_t* color_array){
 uint8_t* serialRcv(void){
   //initialize neccesary variables
   boolean rcv_in_progress = false;
-  uint8_t index = 0;
+  uint8_t loop_index = 0;
+  uint8_t data_index = 0;
   uint8_t rcvd_data[BUFFER_LENGTH];
-  uint8_t return_buffer[PACKET_LENGTH];
+  uint8_t return_buffer[DATA_LENGTH];
   uint8_t rb;
 
   //loop so long as serial data is still available
   //and all of it hasn't been collected yet
-  while ((Serial.available() > 0) && (data_available == false) && (index < PACKET_LENGTH)){
+  while ((Serial.available() > 0) && (data_available == false)){
     //capture data right away
     rb = Serial.read();
 
@@ -119,7 +121,10 @@ uint8_t* serialRcv(void){
       }
 
       //otherwise save the data and continue
-
+      else{
+        return_buffer[data_index] = rb;
+        data_index++;
+      }
     }
 
     //if not then is the byte we just read the start byte?
@@ -137,6 +142,9 @@ uint8_t* serialRcv(void){
   }
 
   if (data_available){
+    color_array[0] = return_buffer[1];
+    color_array[1] = return_buffer[2];
+    color_array[2] = return_buffer[3];
     return return_buffer;
   }
   else{

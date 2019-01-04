@@ -13,6 +13,10 @@ void loop() {
  //loop and send a message to everyone
  setBarColor(0, 255, 0, 0);
  delay(5000);
+ setBarColor(0, 0, 255, 0);
+ delay(5000);
+ setBarColor(0, 0, 0, 255);
+ delay(5000);
 }
 
 //wrapper function to send color message
