@@ -7,6 +7,8 @@
   int state = 0;
   uint8_t color_array[3] = {0, 0, 0}; //initialize to white
   boolean data_available = false;
+  uint8_t return_buffer[DATA_LENGTH];
+
 
 
 void setup() {
@@ -25,18 +27,13 @@ void setup() {
 void loop() {  
   //if serial device is available, read in the data
   if (Serial.available() > 0){
-    try{
-      serialRcv();
-      analogWrite(6, color_array[0]);
-      analogWrite(7, color_array[1]);
-      analogWrite(8, color_array[2]);
-    }
-    //if we receive an exception that must be because serial data became available
-    //but didn't match an appropriately expected packet. If this occurs signal an
-    //error but don't stop the arduino
-    catch (const char* msg){
-      cerr << msg << endl;
-    }
+    serialRcv();
+    Serial.println(color_array[0], DEC);
+    Serial.println(color_array[1], DEC);
+    Serial.println(color_array[2], DEC);
+    analogWrite(6, color_array[0]);
+    analogWrite(7, color_array[1]);
+    analogWrite(8, color_array[2]);
   }//end of serial available check
 
   
@@ -97,13 +94,11 @@ void readColorMessage(uint8_t* color_array){
 }
 
 //receive data from master and return its contents
-uint8_t* serialRcv(void){
+void serialRcv(void){
   //initialize neccesary variables
   boolean rcv_in_progress = false;
   uint8_t loop_index = 0;
   uint8_t data_index = 0;
-  uint8_t rcvd_data[BUFFER_LENGTH];
-  uint8_t return_buffer[DATA_LENGTH];
   uint8_t rb;
 
   //loop so long as serial data is still available
@@ -111,6 +106,8 @@ uint8_t* serialRcv(void){
   while ((Serial.available() > 0) && (data_available == false)){
     //capture data right away
     rb = Serial.read();
+    Serial.println(rb, HEX);
+
 
     //are we actively reading data? if so, continue processing it
     if (rcv_in_progress){
@@ -145,11 +142,9 @@ uint8_t* serialRcv(void){
     color_array[0] = return_buffer[1];
     color_array[1] = return_buffer[2];
     color_array[2] = return_buffer[3];
-    return return_buffer;
+    return;
   }
   else{
-    //we should only get here if the Arduino doesn't find any proper data after
-    //this function is triggered. If so, throw an exception alerting this
-    throw "rcvData triggered but no proper data was found!";
+    return;
   }
 }
