@@ -5,7 +5,7 @@
  #define FALSE 0
 
   //setup some global vars
-  char id = '3';
+  uint8_t id = 0xCD;
   int state = 0;
   uint8_t color_array[3] = {0, 0, 0}; //initialize to white
 
@@ -21,7 +21,7 @@ void setup() {
   analogWrite(11, color_array[2]);
   
   //begin serial device
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
 
 void loop() {
@@ -95,14 +95,7 @@ void serialRcv(void){
   
   } //end of while loop
 
-  if (data_available == TRUE){
-    Serial.print("loop ended and data_available is TRUE, filling color_array");
-    Serial.println("return_buffer[1]: ");
-    Serial.println(return_buffer[1], HEX);
-    Serial.println("return_buffer[2]: ");
-    Serial.println(return_buffer[2], HEX);
-    Serial.println("return_buffer[3]: ");
-    Serial.println(return_buffer[3], HEX);
+  if (data_available == TRUE && return_buffer[0] == id){
     color_array[0] = return_buffer[1];
     color_array[1] = return_buffer[2];
     color_array[2] = return_buffer[3];
