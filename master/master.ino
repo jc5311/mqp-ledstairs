@@ -5,6 +5,7 @@ void setup() {
 
   //setup serial connection
   Serial.begin(9600);
+  delay(2000);
 }
 
 void loop() {
@@ -12,11 +13,9 @@ void loop() {
 
  //loop and send a message to everyone
  setBarColor(0xAB, 255, 0, 0);
- delay(5000);
- setBarColor(0xAB, 0, 255, 0);
- delay(5000);
- setBarColor(0xAB, 0, 0, 255);
- delay(5000);
+ delay(10000);
+ setBarColor(0xAB, 0, 0, 0);
+ delay(10000);
 }
 
 //wrapper function to send color message
