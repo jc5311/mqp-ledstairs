@@ -11,11 +11,11 @@ void loop() {
   // put your main code here, to run repeatedly:
 
  //loop and send a message to everyone
- setBarColor(0xAB, 0xFF, 0x11, 0x11);
+ setBarColor(0xAB, 255, 0, 0);
  delay(5000);
- setBarColor(0xAB, 0x11, 0xFF, 0x11);
+ setBarColor(0xAB, 0, 255, 0);
  delay(5000);
- setBarColor(0xAB, 0x11, 0x11, 0xFF);
+ setBarColor(0xAB, 0, 0, 255);
  delay(5000);
 }
 
