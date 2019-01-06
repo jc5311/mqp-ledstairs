@@ -28,6 +28,7 @@ void loop() {
   //if serial device is available, read in the data
   if (Serial.available() > 0){
     serialRcv();
+    Serial.println("---Color array values as seen by loop()---");
     Serial.println(color_array[0], DEC);
     Serial.println(color_array[1], DEC);
     Serial.println(color_array[2], DEC);
@@ -87,6 +88,7 @@ void readColorMessage(uint8_t* color_array){
   color_array[1] = buffer[3];
   color_array[2] = buffer[4];
   
+  Serial.println("---Color array values as seen by readColorMessage()---");
   Serial.println(color_array[0], DEC);
   Serial.println(color_array[1], DEC);
   Serial.println(color_array[2], DEC);
@@ -106,6 +108,7 @@ void serialRcv(void){
   while ((Serial.available() > 0) && (data_available == false)){
     //capture data right away
     rb = Serial.read();
+    Serial.println("---rb value read---");
     Serial.println(rb, HEX);
 
 
