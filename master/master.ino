@@ -42,7 +42,7 @@ void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uin
     buffer[4] = blue;
   }
   //if leds are common anode reverse the color values
-  else{
+  else if (cnxn_type == COMMON_ANODE){
     buffer[1] = bar_addr;
     buffer[2] = EIGHTBITMAX - red;
     buffer[3]= EIGHTBITMAX - green;
