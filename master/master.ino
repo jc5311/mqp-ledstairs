@@ -94,7 +94,7 @@ void rcvrISR(void){
 
 //function to restart animations after timer end
 void timerRoutine(void){
-  delay(5000); //temporary hack to prevent animations until ready
+  //delay(5000); //delaying doesnt work during interrupt
   //restart animations
   dont_animate = 0;
 } //end of timerRoutine()
