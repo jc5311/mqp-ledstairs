@@ -6,7 +6,7 @@
 
 //globals
 uint8_t dont_animate = 0;
-uint8_t interrupt_pin = 2;
+uint8_t interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
 uint8_t led_bar_count = 3;
 uint8_t led_bar[led_bar_count]; //array to hold led bar addresses
 
