@@ -3,12 +3,12 @@
 #define NORMAL_RANGE 1
 #define FLIPPED_RANGE 0
 #define EIGHTBITMAX 255
+#define LED_BAR_COUNT 3
 
 //globals
 uint8_t dont_animate = 0;
 uint8_t interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
-uint8_t led_bar_count = 3;
-uint8_t led_bar[led_bar_count]; //array to hold led bar addresses
+uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
 
 void setup() {
   //initialize interrupt pin and configure pullup resistor
@@ -76,7 +76,7 @@ void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uin
 //function to disable all led bars
 void disableLedBars(void){
   //loop through the number of bars and send a message to turn off
-  for (int i = 0; i < led_bar_count; i++){
+  for (int i = 0; i < LED_BAR_COUNT; i++){
     setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
   }
 } //end of disableLedBars()
