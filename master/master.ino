@@ -73,6 +73,14 @@ void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uin
   Serial.write(buffer, sizeof(buffer));
 }
 
+//function to disable all led bars
+void disableLedBars(void){
+  //loop through the number of bars and send a message to turn off
+  for (int i = 0; i < led_bar_count; i++){
+    setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
+  }
+} //end of disableLedBars()
+
 //function to trigger animation disabling and 5 second timeout
 //on receiver interrupt
 void rcvrISR(void){
@@ -81,10 +89,10 @@ void rcvrISR(void){
   //set loop condition to not perform animations
 
   //begin or reset 5 second timer
-}
+} //end of rcvrISR()
 
 //function to restart animations after timer end
 void timerRoutine(void){
   //restart animations
   dont_animate = 0;
-}
+} //end of timerRoutine()
