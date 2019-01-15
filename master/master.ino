@@ -7,6 +7,8 @@
 //globals
 uint8_t dont_animate = 0;
 uint8_t interrupt_pin = 2;
+uint8_t led_bar_count = 3;
+uint8_t led_bar[led_bar_count]; //array to hold led bar addresses
 
 void setup() {
   //initialize interrupt pin and configure pullup resistor
@@ -16,7 +18,12 @@ void setup() {
 
   //setup serial connection
   Serial.begin(115200);
-  delay(5000);
+  delay(1000);
+
+  //fill led bar array with led bar addresses
+  led_bar[0] = 0xAB;
+  led_bar[1] = 0xBC;
+  led_bar[2] = 0xCD;
 }
 
 void loop() {
@@ -27,17 +34,17 @@ void loop() {
   }
   else{
     //loop and send animation messages to everyone
-    setBarColor(0xAB, 232, 12, 122, NORMAL_RANGE);
+    setBarColor(led_bar[0], 232, 12, 122, NORMAL_RANGE);
     delay(250);
-    setBarColor(0xBC, 0, 255, 0, NORMAL_RANGE);
+    setBarColor(led_bar[1], 0, 255, 0, NORMAL_RANGE);
     delay(250);
-    setBarColor(0xCD, 0, 0, 255, NORMAL_RANGE);
+    setBarColor(led_bar[2], 0, 0, 255, NORMAL_RANGE);
     delay(250);
-    setBarColor(0xAB, 0, 0, 0, NORMAL_RANGE);
+    setBarColor(led_bar[0], 0, 0, 0, NORMAL_RANGE);
     delay(250);
-    setBarColor(0xBC, 0, 0, 0, NORMAL_RANGE);
+    setBarColor(led_bar[1], 0, 0, 0, NORMAL_RANGE);
     delay(250);
-    setBarColor(0xCD, 0, 0, 0, NORMAL_RANGE);
+    setBarColor(led_bar[2], 0, 0, 0, NORMAL_RANGE);
     delay(250);
   }
 }
