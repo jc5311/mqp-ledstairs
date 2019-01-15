@@ -85,14 +85,16 @@ void disableLedBars(void){
 //on receiver interrupt
 void rcvrISR(void){
   //function call to disable animations
-
+  disableLedBars();
   //set loop condition to not perform animations
-
+  dont_animate = 1;
   //begin or reset 5 second timer
+  timerRoutine();
 } //end of rcvrISR()
 
 //function to restart animations after timer end
 void timerRoutine(void){
+  delay(5000); //temporary hack to prevent animations until ready
   //restart animations
   dont_animate = 0;
 } //end of timerRoutine()
