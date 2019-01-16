@@ -1,9 +1,34 @@
+/**
+ * Author(s):    Juan Caraballo
+ * Created:   1/16/19
+ * Copyright 2019, Juan Caraballo, All rights reserved.
+ * 
+ * Description: This Arduino file implements the software for a master mcu device
+ * within a led stair system. The master serves as the primary controller for an
+ * array of led bars and communicates how and when animations should (should not)
+ * occur.
+ * 
+ * Usage: After flashing this software onto a Arduino it will function
+ * autonomously. Animations will toggle through in time unless an external
+ * receiver trip is signaled; after which the system will wait 5 seconds before
+ * recommencing animation.
+ * 
+ * (( Note to self
+ * Add notes for pinouts
+ * Add notes for animation/system timing
+ * ))
+ */
+
+//includes
+#include <Arduino_FreeRTOS.h> //RTOS library for scheduling tasks
+
 //defines
 #define PACKET_LENGTH 6
+#define LED_BAR_COUNT 3
 #define NORMAL_RANGE 1
 #define FLIPPED_RANGE 0
 #define EIGHTBITMAX 255
-#define LED_BAR_COUNT 3
+#define BAUD_RATE 115200 //master and slave mcu bauds MUST match
 
 //globals
 uint8_t dont_animate = 0;
@@ -17,7 +42,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(interrupt_pin), rcvrISR, FALLING);
 
   //setup serial connection
-  Serial.begin(115200);
+  Serial.begin(BAUD_RATE);
   delay(1000);
 
   //fill led bar array with led bar addresses
@@ -49,7 +74,6 @@ void loop() {
   }
 }
 
-//wrapper function to send color message
 void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uint8_t range_type){
   uint8_t buffer[] = {0xAA, 0x00, 0x00, 0x00, 0x00, 0xBB};
 
@@ -71,12 +95,11 @@ void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uin
 
   //Write buffer to serial
   Serial.write(buffer, sizeof(buffer));
-}
+} //end of setBarColor()
 
-//function to disable all led bars
-void disableLedBars(void){
+void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[]){
   //loop through the number of bars and send a message to turn off
-  for (int i = 0; i < LED_BAR_COUNT; i++){
+  for (int i = 0; i < led_bar_count; i++){
     setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
   }
 } //end of disableLedBars()
@@ -85,7 +108,7 @@ void disableLedBars(void){
 //on receiver interrupt
 void rcvrISR(void){
   //function call to disable animations
-  disableLedBars();
+  disableLedBars(LED_BAR_COUNT, led_bar);
   //set loop condition to not perform animations
   dont_animate = 1;
   //begin or reset 5 second timer
