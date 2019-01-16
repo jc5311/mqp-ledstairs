@@ -1,15 +1,21 @@
-//rainbow func
+// rainbow func
+
+// Define Variables
 i = 0;
 r = 255;
 g = 0;
 b = 0;
 case = 1;
 t = timer;
-//dir is direction, 1 up and 0 down
+// dir is direction, 1 up and 0 down
 dir = 1;
-start timer
-//5 minute while loop
+
+//start timer
+
+// 5 minute while loop
 while (t < 300000) {
+
+// Switching between color incrementing
   switch(case) {
     case 1:
       setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
@@ -19,6 +25,7 @@ while (t < 300000) {
         case = 2;
        }
       break;
+      
     case 2:
       setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
       r = r - 30;
@@ -27,6 +34,7 @@ while (t < 300000) {
         case = 3;
        }
       break;
+      
     case 3:
       setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
       b = b + 30;
@@ -35,6 +43,7 @@ while (t < 300000) {
         case = 4;
        }
       break;
+      
     case 4:
       setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
       g = g - 30;
@@ -43,6 +52,7 @@ while (t < 300000) {
         case = 5;
        }
       break;    
+      
     case 5:
       setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
       r = r + 30;
@@ -51,6 +61,7 @@ while (t < 300000) {
         case = 6;
        }
       break;
+      
     case 6:
       setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
       b = b - 30;
@@ -60,6 +71,8 @@ while (t < 300000) {
        }
       break; 
   }
+  
+// Tells direction of animation
   if (dir == 1){
     if (i == LED_BAR_COUNT) {
       dir = 0;
@@ -72,8 +85,12 @@ while (t < 300000) {
       }
     i = i - 1;
     }
+    
+// Starts turning off Light bars once three are on at a time
   if (t > 2) {
     setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
     }
+    
+// Delays one second
   delay(1000);
 }
