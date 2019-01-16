@@ -35,6 +35,13 @@ uint8_t dont_animate = 0;
 uint8_t interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
 uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
 
+//prototypes
+void setBarColor(uint8_t bar_addr, uint8_t red, 
+                 uint8_t green, uint8_t blue, uint8_t range_type);
+void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[]);
+void rcvrISR(void);
+void timerRoutine(void);
+
 void setup() {
   //initialize interrupt pin and configure pullup resistor
   pinMode(interrupt_pin, INPUT_PULLUP);
@@ -43,12 +50,41 @@ void setup() {
 
   //setup serial connection
   Serial.begin(BAUD_RATE);
-  delay(1000);
+  while(!Serial); //wait for serial port to connect
 
   //fill led bar array with led bar addresses
   led_bar[0] = 0xAB;
   led_bar[1] = 0xBC;
   led_bar[2] = 0xCD;
+
+  //configure RTOS tasks
+
+  xTaskCreate(
+    TaskAnimate,
+    (const portCHAR *)"Animation",
+    128, //stack size
+    NULL,
+    1, //priority
+    NULL
+  );
+
+  xTaskCreate(
+    TaskSendSerial,
+    (const portCHAR *)"SendSerialMessage",
+    128, //stack size
+    NULL,
+    2, //priority
+    NULL
+  );
+
+  xTaskCreate(
+    TaskAnimationDisable,
+    (const portCHAR *)"DisableAnimations",
+    128, //stack size
+    NULL,
+    2, //priority
+    NULL
+  );
 }
 
 void loop() {
@@ -121,3 +157,18 @@ void timerRoutine(void){
   //restart animations
   dont_animate = 0;
 } //end of timerRoutine()
+
+//task to toggle through and execute animations
+void TaskAnimate(void *pvParameters){
+  (void) pvParameters;
+
+  //pend on animation semaphore
+  //call function to initiate animation
+}
+
+//disable animations and wait until signal to animate is given
+void TaskAnimationDisable(void *pvParameters){
+  (void) pvParameters;
+
+  //
+}
