@@ -29,9 +29,9 @@
 #define FLIPPED_RANGE 0
 #define EIGHTBITMAX 255
 #define BAUD_RATE 115200 //master and slave mcu bauds MUST match
+#define COOLDOWN_PERIOD 5 //timer cooldown period (in seconds)
 
 //globals
-uint8_t dont_animate = 0;
 uint8_t interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
 uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
 uint8_t timer_done = 0;
@@ -46,6 +46,9 @@ void cooldownTimer(void);
 //rtos tasks
 void TaskAnimate(void *pvParameters);
 void TaskAnimationDisable(void *pvParameters);
+
+//rtos semaphores
+SemaphoreHandle_t xLedDisableSemaphore;
 
 void setup() {
   //initialize interrupt pin and configure pullup resistor
@@ -62,8 +65,12 @@ void setup() {
   led_bar[1] = 0xBC;
   led_bar[2] = 0xCD;
 
-  //configure RTOS tasks
+  //configure semaphore
+  if (xLedDisabeleSemaphore == NULL){ //confirm semaphore wasn't already made
+    xLedDisableSemaphore = xSemaphoreCreateMutex(); //mutex semaphore
+  }
 
+  //configure RTOS tasks
   xTaskCreate(
     TaskAnimate,
     (const portCHAR *)"Toggle Animations",
@@ -91,6 +98,17 @@ void loop() {
   * Otherwise we can conserve energy by sleeping the MCU whenever we enter this
   * loop.
   */
+}
+
+//interrupt service routine for timer 0
+ISR (TIMER0_OVF_vect){
+  timer_count++;
+
+  if (timer_count == COOLDOWN_PERIOD){
+    timer_done = 1; //signal that COOLDOWN_PERIOD seconds have passed
+    TCCR0B = (0 << CS00) | (0 << CS00) | (0 << CS00); //disable timer
+    TCNT0 = 0x00; //clear counter
+  }
 }
 
 void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uint8_t range_type){
@@ -129,52 +147,54 @@ void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[]){
 //function to trigger animation disabling and 5 second timeout
 //on receiver interrupt
 void rcvrISR(void){
-  //function call to disable animations
-  disableLedBars(LED_BAR_COUNT, led_bar);
-  //set loop condition to not perform animations
-  dont_animate = 1;
-  //begin or reset 5 second timer
-  timerRoutine();
+  //post led_disable_semaphore
+
 } //end of rcvrISR()
 
 //task to toggle through and execute animations
 void TaskAnimate(void *pvParameters){
   (void) pvParameters;
 
-  //loop and send animation messages to everyone
-  setBarColor(led_bar[0], 232, 12, 122, NORMAL_RANGE);
-  delay(250);
-  setBarColor(led_bar[1], 0, 255, 0, NORMAL_RANGE);
-  delay(250);
-  setBarColor(led_bar[2], 0, 0, 255, NORMAL_RANGE);
-  delay(250);
-  setBarColor(led_bar[0], 0, 0, 0, NORMAL_RANGE);
-  delay(250);
-  setBarColor(led_bar[1], 0, 0, 0, NORMAL_RANGE);
-  delay(250);
-  setBarColor(led_bar[2], 0, 0, 0, NORMAL_RANGE);
-  delay(250);
+  while(1){
+    //loop and send animation messages to everyone
+    setBarColor(led_bar[0], 232, 12, 122, NORMAL_RANGE);
+    delay(250);
+    setBarColor(led_bar[1], 0, 255, 0, NORMAL_RANGE);
+    delay(250);
+    setBarColor(led_bar[2], 0, 0, 255, NORMAL_RANGE);
+    delay(250);
+    setBarColor(led_bar[0], 0, 0, 0, NORMAL_RANGE);
+    delay(250);
+    setBarColor(led_bar[1], 0, 0, 0, NORMAL_RANGE);
+    delay(250);
+    setBarColor(led_bar[2], 0, 0, 0, NORMAL_RANGE);
+    delay(250);
+  }
 }
 
 //disable animations and wait until signal to animate is given
 void TaskAnimationDisable(void *pvParameters){
   (void) pvParameters;
   
+  //pend on led_disable_semaphore
+
   //loop through led bars and send message to disable animation
   disableLedBars(LED_BAR_COUNT, led_bar);
   
-  //delay five seconds
+  //delay COOLDOWN_PERIOD seconds
   cooldownTimer();
-
 }
 
 void cooldownTimer(void){
-
-  //start timer
+  //start timer0
+  TCCR0B = 1 << CS00; //timer clock = I/O clock
+  TIFR0 = 1 << TOV0; //clear the overflow flag
+  TIMSK0 = 1 << TOIE0; //enable timer interrupts
+  TCNT0 = 0x00; //clear timer0 counter
 
   //loop until timer complete
   while (!timer_done);
 
-  timer_done = 1;
+  timer_done = 0;
   return;
 }
