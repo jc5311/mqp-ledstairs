@@ -34,13 +34,18 @@
 uint8_t dont_animate = 0;
 uint8_t interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
 uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
+uint8_t timer_done = 0;
+uint8_t timer_count = 0;
 
 //prototypes
 void setBarColor(uint8_t bar_addr, uint8_t red, 
                  uint8_t green, uint8_t blue, uint8_t range_type);
 void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[]);
 void rcvrISR(void);
-void timerRoutine(void);
+void cooldownTimer(void);
+//rtos tasks
+void TaskAnimate(void *pvParameters);
+void TaskAnimationDisable(void *pvParameters);
 
 void setup() {
   //initialize interrupt pin and configure pullup resistor
@@ -79,26 +84,13 @@ void setup() {
 }
 
 void loop() {
-  
-  if (dont_animate){
-    //Do nothing. After 5 second timer end dont_animate should reset to 0 and
-    //animations will restart
-  }
-  else{
-    //loop and send animation messages to everyone
-    setBarColor(led_bar[0], 232, 12, 122, NORMAL_RANGE);
-    delay(250);
-    setBarColor(led_bar[1], 0, 255, 0, NORMAL_RANGE);
-    delay(250);
-    setBarColor(led_bar[2], 0, 0, 255, NORMAL_RANGE);
-    delay(250);
-    setBarColor(led_bar[0], 0, 0, 0, NORMAL_RANGE);
-    delay(250);
-    setBarColor(led_bar[1], 0, 0, 0, NORMAL_RANGE);
-    delay(250);
-    setBarColor(led_bar[2], 0, 0, 0, NORMAL_RANGE);
-    delay(250);
-  }
+  /*
+  * Since we are using an RTOS all work to be done is placed into tasks.
+  * Therefore nothing needs to go here. Unless we needed to do some background
+  * work when no other high priority tasks were working we could do that here.
+  * Otherwise we can conserve energy by sleeping the MCU whenever we enter this
+  * loop.
+  */
 }
 
 void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uint8_t range_type){
@@ -145,28 +137,44 @@ void rcvrISR(void){
   timerRoutine();
 } //end of rcvrISR()
 
-//function to restart animations after timer end
-void timerRoutine(void){
-  //delay(5000); //delaying doesnt work during interrupt
-  //restart animations
-  dont_animate = 0;
-} //end of timerRoutine()
-
 //task to toggle through and execute animations
 void TaskAnimate(void *pvParameters){
   (void) pvParameters;
 
-  //pend on animation semaphore
-  //call function to initiate animation
+  //loop and send animation messages to everyone
+  setBarColor(led_bar[0], 232, 12, 122, NORMAL_RANGE);
+  delay(250);
+  setBarColor(led_bar[1], 0, 255, 0, NORMAL_RANGE);
+  delay(250);
+  setBarColor(led_bar[2], 0, 0, 255, NORMAL_RANGE);
+  delay(250);
+  setBarColor(led_bar[0], 0, 0, 0, NORMAL_RANGE);
+  delay(250);
+  setBarColor(led_bar[1], 0, 0, 0, NORMAL_RANGE);
+  delay(250);
+  setBarColor(led_bar[2], 0, 0, 0, NORMAL_RANGE);
+  delay(250);
 }
 
 //disable animations and wait until signal to animate is given
 void TaskAnimationDisable(void *pvParameters){
   (void) pvParameters;
-
+  
   //loop through led bars and send message to disable animation
+  disableLedBars(LED_BAR_COUNT, led_bar);
   
   //delay five seconds
+  cooldownTimer();
 
-  //post semaphore to continue animation
+}
+
+void cooldownTimer(void){
+
+  //start timer
+
+  //loop until timer complete
+  while (!timer_done);
+
+  timer_done = 1;
+  return;
 }
