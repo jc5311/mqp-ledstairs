@@ -61,7 +61,7 @@ void setup() {
 
   xTaskCreate(
     TaskAnimate,
-    (const portCHAR *)"Animation",
+    (const portCHAR *)"Toggle Animations",
     128, //stack size
     NULL,
     1, //priority
@@ -69,17 +69,8 @@ void setup() {
   );
 
   xTaskCreate(
-    TaskSendSerial,
-    (const portCHAR *)"SendSerialMessage",
-    128, //stack size
-    NULL,
-    2, //priority
-    NULL
-  );
-
-  xTaskCreate(
     TaskAnimationDisable,
-    (const portCHAR *)"DisableAnimations",
+    (const portCHAR *)"Disable Animations",
     128, //stack size
     NULL,
     2, //priority
@@ -111,6 +102,7 @@ void loop() {
 }
 
 void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uint8_t range_type){
+  //pend semaphore
   uint8_t buffer[] = {0xAA, 0x00, 0x00, 0x00, 0x00, 0xBB};
 
   //package argument details into buffer
@@ -131,6 +123,8 @@ void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uin
 
   //Write buffer to serial
   Serial.write(buffer, sizeof(buffer));
+
+  //post semaphore
 } //end of setBarColor()
 
 void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[]){
@@ -170,5 +164,9 @@ void TaskAnimate(void *pvParameters){
 void TaskAnimationDisable(void *pvParameters){
   (void) pvParameters;
 
-  //
+  //loop through led bars and send message to disable animation
+  
+  //delay five seconds
+
+  //post semaphore to continue animation
 }
