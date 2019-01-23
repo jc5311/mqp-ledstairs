@@ -102,13 +102,13 @@ void loop() {
 }
 
 //interrupt service routine for timer 0
-ISR (TIMER0_OVF_vect){
+ISR (TIMER2_OVF_vect){
   timer_count++;
 
   if (timer_count == COOLDOWN_PERIOD){
     timer_done = 1; //signal that COOLDOWN_PERIOD seconds have passed
-    TCCR0B = (0 << CS00) | (0 << CS00) | (0 << CS00); //disable timer
-    TCNT0 = 0x00; //clear counter
+    TCCR2B = (0 << CS20); //disable timer
+    TCNT2 = 0x00; //clear counter
   }
 }
 
@@ -187,11 +187,12 @@ void TaskAnimationDisable(void *pvParameters){
 }
 
 void cooldownTimer(void){
-  //start timer0
-  TCCR0B = 1 << CS00; //timer clock = I/O clock
-  TIFR0 = 1 << TOV0; //clear the overflow flag
-  TIMSK0 = 1 << TOIE0; //enable timer interrupts
-  TCNT0 = 0x00; //clear timer0 counter
+  //start timer2
+  TCCR2B = 0 << CS20; //timer clock => disable for configuration
+  TIFR2 = 1 << TOV2; //clear the overflow flag
+  TIMSK2 = 1 << TOIE2; //enable timer interrupts
+  TCNT2 = 0x00; //clear timer0 counter
+  TCCR2B = 1 << CS20; //timer clock = I/O clock => officially starts the timer
 
   //loop until timer complete
   while (!timer_done);
