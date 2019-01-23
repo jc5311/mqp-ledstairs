@@ -20,7 +20,8 @@
  */
 
 //includes
-#include <Arduino_FreeRTOS.h> //RTOS library for scheduling tasks
+#include <Arduino_FreeRTOS.h>
+#include <semphr.h>
 
 //defines
 #define PACKET_LENGTH 6
@@ -66,7 +67,7 @@ void setup() {
   led_bar[2] = 0xCD;
 
   //configure semaphore
-  if (xLedDisabeleSemaphore == NULL){ //confirm semaphore wasn't already made
+  if (xLedDisableSemaphore == NULL){ //confirm semaphore wasn't already made
     xLedDisableSemaphore = xSemaphoreCreateMutex(); //mutex semaphore
   }
 
