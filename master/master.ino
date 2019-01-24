@@ -210,3 +210,34 @@ void cooldownTimer(void){
   timer_done = 0;
   return;
 }
+
+
+/**
+ * Perform an analogRead() and return a scale by which
+ * LED brightness must be reduced.
+ */ 
+uint18_t readAmbientBrightness(void){
+  //record ambient_brightness
+  uint8_t dimness = 0;
+  uint16_t reading = analogRead(A0);
+
+  //calculate the dimming scale
+  if (reading < 205){ 
+    //100% brightness
+    dimness = 1;
+  }
+  else if ((reading > 205) && (reading <= 410)){
+    //80% brightness
+  }
+  else if ((reading > 410) && (reading <= 615)){
+    //60% brightness
+  }
+  else if ((reading > 615) && (reading <= 820)){
+    //40% brightness
+  }
+  else{
+    //20% brightness
+  }
+
+
+}
