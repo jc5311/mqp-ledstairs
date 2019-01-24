@@ -38,7 +38,9 @@ uint8_t debug_toggle = 0;
 uint8_t interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
 uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
 uint8_t timer_done = 0;
-uint8_t timer_count = 0;
+uint8_t timer_counter = 0;
+uint8_t timeout_counter = 0;
+uint8_t toggler = 0;
 
 //prototypes
 void setBarColor(uint8_t bar_addr, uint8_t red, 
@@ -149,15 +151,21 @@ void rcvrISR(void){
 
 //interrupt service routine for timer 2
 ISR (TIMER2_OVF_vect){
-  timer_count++;
-  
-  digitalWrite(debug_led, HIGH);
+  timer_counter++;
 
-  if (timer_count == COOLDOWN_PERIOD){
-    timer_done = 1; //signal that COOLDOWN_PERIOD seconds have passed
-    TCCR2B = (0 << CS20); //disable timer
+  if (timer_counter == 30){
+    timeout_counter++;
+    timer_counter = 0;
+  }
+
+  if (timeout_counter == COOLDOWN_PERIOD){
+    digitalWrite(debug_led, LOW);
+    TCCR2B = (0 << CS22) | (0 << CS21) | (0 << CS20); //disable timer
     TCNT2 = 0x00; //clear counter
-    timer_count = 0;
+    timer_counter = 0;
+    timeout_counter = 0;
+    timer_done = 1; //signal that COOLDOWN_PERIOD seconds have passed
+
   }
 
 }
@@ -203,9 +211,10 @@ void cooldownTimer(void){
   TIFR2 = 1 << TOV2; //clear the overflow flag
   TIMSK2 = 1 << TOIE2; //enable timer interrupts
   TCNT2 = 0x00; //clear timer0 counter
-  TCCR2B = 1 << CS20; //timer clock = I/O clock => officially starts the timer
+  TCCR2B = (1 << CS22) | (1 << CS21) | (1 << CS20); //start timer with 1024 prescaler
 
   //loop until timer complete
+  digitalWrite(debug_led, HIGH);
   while (!timer_done);
   timer_done = 0;
   return;
@@ -216,7 +225,7 @@ void cooldownTimer(void){
  * Perform an analogRead() and return a scale by which
  * LED brightness must be reduced.
  */ 
-uint18_t readAmbientBrightness(void){
+uint16_t readAmbientBrightness(void){
   //record ambient_brightness
   uint8_t dimness = 0;
   uint16_t reading = analogRead(A0);
