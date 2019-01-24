@@ -33,6 +33,8 @@
 #define COOLDOWN_PERIOD 5 //timer cooldown period (in seconds)
 
 //globals
+uint8_t debug_led = 13;
+uint8_t debug_toggle = 0;
 uint8_t interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
 uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
 uint8_t timer_done = 0;
@@ -52,6 +54,10 @@ void TaskAnimationDisable(void *pvParameters);
 SemaphoreHandle_t xLedDisableSemaphore;
 
 void setup() {
+  //debug led setup
+  pinMode(debug_led, OUTPUT);
+  digitalWrite(debug_led, LOW);
+
   //initialize interrupt pin and configure pullup resistor
   pinMode(interrupt_pin, INPUT_PULLUP);
   //attach interrupt to the interrupt pin and configure trigger on falling edge
@@ -101,18 +107,6 @@ void loop() {
   */
 }
 
-//interrupt service routine for timer 0
-ISR (TIMER2_OVF_vect){
-  timer_count++;
-
-  if (timer_count == COOLDOWN_PERIOD){
-    timer_done = 1; //signal that COOLDOWN_PERIOD seconds have passed
-    TCCR2B = (0 << CS20); //disable timer
-    TCNT2 = 0x00; //clear counter
-  }
-
-}
-
 void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uint8_t range_type){
   //pend semaphore
   uint8_t buffer[] = {0xAA, 0x00, 0x00, 0x00, 0x00, 0xBB};
@@ -152,6 +146,21 @@ void rcvrISR(void){
   //post led_disable_semaphore
   xSemaphoreGiveFromISR(xLedDisableSemaphore, NULL);
 } //end of rcvrISR()
+
+//interrupt service routine for timer 2
+ISR (TIMER2_OVF_vect){
+  timer_count++;
+  
+  digitalWrite(debug_led, HIGH);
+
+  if (timer_count == COOLDOWN_PERIOD){
+    timer_done = 1; //signal that COOLDOWN_PERIOD seconds have passed
+    TCCR2B = (0 << CS20); //disable timer
+    TCNT2 = 0x00; //clear counter
+    timer_count = 0;
+  }
+
+}
 
 //task to toggle through and execute animations
 void TaskAnimate(void *pvParameters){
@@ -198,7 +207,6 @@ void cooldownTimer(void){
 
   //loop until timer complete
   while (!timer_done);
-
   timer_done = 0;
   return;
 }
