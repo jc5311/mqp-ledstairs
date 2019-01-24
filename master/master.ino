@@ -68,7 +68,7 @@ void setup() {
 
   //configure semaphore
   if (xLedDisableSemaphore == NULL){ //confirm semaphore wasn't already made
-    xLedDisableSemaphore = xSemaphoreCreateMutex(); //mutex semaphore
+    xLedDisableSemaphore = xSemaphoreCreateBinary();
   }
 
   //configure RTOS tasks
@@ -110,6 +110,7 @@ ISR (TIMER2_OVF_vect){
     TCCR2B = (0 << CS20); //disable timer
     TCNT2 = 0x00; //clear counter
   }
+
 }
 
 void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uint8_t range_type){
@@ -149,7 +150,7 @@ void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[]){
 //on receiver interrupt
 void rcvrISR(void){
   //post led_disable_semaphore
-
+  xSemaphoreGiveFromISR(xLedDisableSemaphore, NULL);
 } //end of rcvrISR()
 
 //task to toggle through and execute animations
@@ -178,6 +179,7 @@ void TaskAnimationDisable(void *pvParameters){
   (void) pvParameters;
   
   //pend on led_disable_semaphore
+  xSemaphoreTake(xLedDisableSemaphore, portMAX_DELAY);
 
   //loop through led bars and send message to disable animation
   disableLedBars(LED_BAR_COUNT, led_bar);
