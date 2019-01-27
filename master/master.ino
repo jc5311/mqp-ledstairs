@@ -195,11 +195,11 @@ ISR (TIMER2_OVF_vect){
 }
 
 //task to toggle through and execute animations
-void TaskAnimate(void *pvParameters){
+void TaskAnimate(void *pvParameters __attribute__((unused)) ){
   (void) pvParameters;
 
   while(1){
-
+    /*
     //record ambient_brightness
     uint16_t reading;
     reading = analogRead(A0);
@@ -225,7 +225,7 @@ void TaskAnimate(void *pvParameters){
     else{
       //20% brightness
       light_dimness = 0.2;
-    }
+    }*/
     
     //loop and send animation messages to everyone
     setBarColor(led_bar[0], 232, 12, 122, NORMAL_RANGE);
@@ -244,22 +244,25 @@ void TaskAnimate(void *pvParameters){
 }
 
 //disable animations and wait until signal to animate is given
-void TaskAnimationDisable(void *pvParameters){
+void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
+{
   (void) pvParameters;
   
   while(1){
     //pend on led_disable_semaphore
-    xSemaphoreTake(xLedDisableSemaphore, portMAX_DELAY);
-
-    //loop through led bars and send message to disable animation
-    disableLedBars(LED_BAR_COUNT, led_bar);
-    
-    //delay COOLDOWN_PERIOD seconds
-    cooldownTimer();
+    if (xSemaphoreTake(xLedDisableSemaphore, portMAX_DELAY) == pdTRUE)
+    {
+      //loop through led bars and send message to disable animation
+      disableLedBars(LED_BAR_COUNT, led_bar);
+      
+      //delay COOLDOWN_PERIOD seconds
+      cooldownTimer();
+    }
   }
 }
 
-void cooldownTimer(void){
+void cooldownTimer(void)
+{
   //start timer2
   TCCR2B = 0 << CS20; //timer clock => disable for configuration
   TIFR2 = 1 << TOV2; //clear the overflow flag
@@ -280,38 +283,40 @@ void cooldownTimer(void){
  * Perform an analogRead() and return a scale by which
  * LED brightness must be reduced.
  */ 
-void TaskReadAdcBrightness(void* pvParameters){
+void TaskReadAdcBrightness(void* pvParameters __attribute__((unused)) ){
   (void) pvParameters;
 
-  while(1){
+  while(1)
+  {
     //pend AdcUpdateSemaphore
-    xSemaphoreTake(xAdcUpdateSemaphore, portMAX_DELAY);
+    if (xSemaphoreTake(xAdcUpdateSemaphore, portMAX_DELAY) == pdTRUE)
+    {
+      //record ambient_brightness
+      uint16_t reading;
+      reading = analogRead(A0);
+      //reading = 620;
 
-    //record ambient_brightness
-    uint16_t reading;
-    //reading = analogRead(A0);
-    reading = 620;
-
-    //calculate the dimming scale
-    if (reading < 205){ 
-      //100% brightness
-      light_dimness = 1.0;
-    }
-    else if ((reading > 205) && (reading <= 410)){
-      //80% brightness
-      light_dimness = 0.8;
-    }
-    else if ((reading > 410) && (reading <= 615)){
-      //60% brightness
-      light_dimness = 0.5;
-    }
-    else if ((reading > 615) && (reading <= 820)){
-      //40% brightness
-      light_dimness = 0.4;
-    }
-    else{
-      //20% brightness
-      light_dimness = 0.2;
+      //calculate the dimming scale
+      if (reading < 205){ 
+        //100% brightness
+        light_dimness = 1.0;
+      }
+      else if ((reading > 205) && (reading <= 410)){
+        //80% brightness
+        light_dimness = 0.8;
+      }
+      else if ((reading > 410) && (reading <= 615)){
+        //60% brightness
+        light_dimness = 0.5;
+      }
+      else if ((reading > 615) && (reading <= 820)){
+        //40% brightness
+        light_dimness = 0.4;
+      }
+      else{
+        //20% brightness
+        light_dimness = 0.2;
+      }
     }
   }
 }
