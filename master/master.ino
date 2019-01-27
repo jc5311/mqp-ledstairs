@@ -189,7 +189,7 @@ ISR (TIMER2_OVF_vect){
     timer_counter = 0;
     timeout_counter = 0;
     timer_done = 1; //signal that COOLDOWN_PERIOD seconds have passed
-
+    Serial.println(1);
   }
 
 }
@@ -257,6 +257,7 @@ void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
       
       //delay COOLDOWN_PERIOD seconds
       cooldownTimer();
+      Serial.println(5);
     }
   }
 }
@@ -272,9 +273,11 @@ void cooldownTimer(void)
 
   //loop until timer complete
   digitalWrite(debug_led, HIGH);
-  while (!timer_done);
-  digitalWrite(debug_led, HIGH);
+  while (timer_done != 1){
+    Serial.println(7);
+  }
   timer_done = 0;
+  Serial.println(3);
   return;
 }
 
