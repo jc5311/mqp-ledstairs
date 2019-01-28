@@ -22,6 +22,7 @@
 //includes
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
+#include <task.h>
 
 //defines
 #define PACKET_LENGTH 6
@@ -128,6 +129,8 @@ void loop() {
   */
 }
 
+/***** System Control Functions *****/
+
 void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uint8_t range_type){
   //pend semaphore
   uint8_t buffer[] = {0xAA, 0x00, 0x00, 0x00, 0x00, 0xBB};
@@ -161,6 +164,8 @@ void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[]){
   }
 } //end of disableLedBars()
 
+/**** Interrupt Service Routines *****/
+
 //function to trigger animation disabling and 5 second timeout
 //on receiver interrupt
 void rcvrISR(void){
@@ -174,7 +179,8 @@ void adcISR(void){
 }
 
 //interrupt service routine for timer 2
-ISR (TIMER2_OVF_vect){
+ISR (TIMER2_OVF_vect)
+{
   timer_counter++;
 
   if (timer_counter == 30){
@@ -189,44 +195,20 @@ ISR (TIMER2_OVF_vect){
     timer_counter = 0;
     timeout_counter = 0;
     timer_done = 1; //signal that COOLDOWN_PERIOD seconds have passed
-    Serial.println(1);
+    xTaskResumeAll();
+    //Serial.println(2);
   }
 
 }
+
+/***** RTOS Tasks *****/
 
 //task to toggle through and execute animations
 void TaskAnimate(void *pvParameters __attribute__((unused)) ){
   (void) pvParameters;
 
-  while(1){
-    /*
-    //record ambient_brightness
-    uint16_t reading;
-    reading = analogRead(A0);
-
-
-    //calculate the dimming scale
-    if (reading < 205){ 
-      //100% brightness
-      light_dimness = 1.0;
-    }
-    else if ((reading > 205) && (reading <= 410)){
-      //80% brightness
-      light_dimness = 0.8;
-    }
-    else if ((reading > 410) && (reading <= 615)){
-      //60% brightness
-      light_dimness = 0.5;
-    }
-    else if ((reading > 615) && (reading <= 820)){
-      //40% brightness
-      light_dimness = 0.4;
-    }
-    else{
-      //20% brightness
-      light_dimness = 0.2;
-    }*/
-    
+  while(1)
+  {    
     //loop and send animation messages to everyone
     setBarColor(led_bar[0], 232, 12, 122, NORMAL_RANGE);
     delay(250);
@@ -248,7 +230,8 @@ void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
 {
   (void) pvParameters;
   
-  while(1){
+  while(1)
+  {
     //pend on led_disable_semaphore
     if (xSemaphoreTake(xLedDisableSemaphore, portMAX_DELAY) == pdTRUE)
     {
@@ -256,12 +239,24 @@ void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
       disableLedBars(LED_BAR_COUNT, led_bar);
       
       //delay COOLDOWN_PERIOD seconds
-      cooldownTimer();
-      Serial.println(5);
+      TCCR2B = 0 << CS20; //timer clock => disable for configuration
+      TIFR2 = 1 << TOV2; //clear the overflow flag
+      TIMSK2 = 1 << TOIE2; //enable timer interrupts
+      TCNT2 = 0x00; //clear timer0 counter
+      TCCR2B = (1 << CS22) | (1 << CS21) | (1 << CS20); //start timer with 1024 prescaler
+
+      //loop until timer complete
+      digitalWrite(debug_led, HIGH);
+      vTaskSuspendAll();
+      while (timer_done != 1){
+        //Serial.println(1);
+      }
+      timer_done = 0;
+      //Serial.println(3);
     }
   }
 }
-
+/*
 void cooldownTimer(void)
 {
   //start timer2
@@ -280,6 +275,7 @@ void cooldownTimer(void)
   Serial.println(3);
   return;
 }
+*/
 
 
 /**
@@ -289,7 +285,7 @@ void cooldownTimer(void)
 void TaskReadAdcBrightness(void* pvParameters __attribute__((unused)) ){
   (void) pvParameters;
 
-  while(1)
+  while(1) //a task shall never exit or return
   {
     //pend AdcUpdateSemaphore
     if (xSemaphoreTake(xAdcUpdateSemaphore, portMAX_DELAY) == pdTRUE)
@@ -297,7 +293,6 @@ void TaskReadAdcBrightness(void* pvParameters __attribute__((unused)) ){
       //record ambient_brightness
       uint16_t reading;
       reading = analogRead(A0);
-      //reading = 620;
 
       //calculate the dimming scale
       if (reading < 205){ 
