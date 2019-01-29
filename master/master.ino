@@ -39,9 +39,9 @@ uint8_t debug_toggle = 0;
 uint8_t rcvr_interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
 uint8_t adc_interrupt_pin = 3; //only p2 and p3 can be used for interrupt on nano
 uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
-uint8_t timer_done = 0;
-uint8_t timer_counter = 0;
-uint8_t timeout_counter = 0;
+volatile uint8_t timer_done = 0;
+volatile uint8_t timer_counter = 0;
+volatile uint8_t timeout_counter = 0;
 uint8_t toggler = 0;
 float light_dimness = 1;
 
@@ -195,7 +195,6 @@ ISR (TIMER2_OVF_vect)
     timer_counter = 0;
     timeout_counter = 0;
     timer_done = 1; //signal that COOLDOWN_PERIOD seconds have passed
-    xTaskResumeAll();
     //Serial.println(2);
   }
 
@@ -251,32 +250,12 @@ void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
       while (timer_done != 1){
         //Serial.println(1);
       }
+      xTaskResumeAll();
       timer_done = 0;
       //Serial.println(3);
     }
   }
 }
-/*
-void cooldownTimer(void)
-{
-  //start timer2
-  TCCR2B = 0 << CS20; //timer clock => disable for configuration
-  TIFR2 = 1 << TOV2; //clear the overflow flag
-  TIMSK2 = 1 << TOIE2; //enable timer interrupts
-  TCNT2 = 0x00; //clear timer0 counter
-  TCCR2B = (1 << CS22) | (1 << CS21) | (1 << CS20); //start timer with 1024 prescaler
-
-  //loop until timer complete
-  digitalWrite(debug_led, HIGH);
-  while (timer_done != 1){
-    Serial.println(7);
-  }
-  timer_done = 0;
-  Serial.println(3);
-  return;
-}
-*/
-
 
 /**
  * Perform an analogRead() and return a scale by which
