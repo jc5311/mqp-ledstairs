@@ -248,12 +248,9 @@ void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
       //loop until timer complete
       digitalWrite(debug_led, HIGH);
       vTaskSuspendAll();
-      while (timer_done != 1){
-        //Serial.println(1);
-      }
+      while (timer_done != 1);
       xTaskResumeAll();
       timer_done = 0;
-      //Serial.println(3);
     }
   }
 }
