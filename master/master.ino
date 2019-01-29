@@ -39,6 +39,7 @@ uint8_t debug_toggle = 0;
 uint8_t rcvr_interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
 uint8_t adc_interrupt_pin = 3; //only p2 and p3 can be used for interrupt on nano
 uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
+//variables used in interrupts must ALWAYS be declared as volatile
 volatile uint8_t timer_done = 0;
 volatile uint8_t timer_counter = 0;
 volatile uint8_t timeout_counter = 0;
