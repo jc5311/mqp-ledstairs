@@ -45,6 +45,7 @@ volatile uint8_t timer_counter = 0;
 volatile uint8_t timeout_counter = 0;
 uint8_t toggler = 0;
 float light_dimness = 1;
+volatile uint8_t timer_already_running = 0;
 
 //prototypes
 void setBarColor(uint8_t bar_addr, uint8_t red, 
@@ -61,7 +62,8 @@ void TaskReadAdcBrightness(void* pvParameters);
 SemaphoreHandle_t xLedDisableSemaphore;
 SemaphoreHandle_t xAdcUpdateSemaphore;
 
-void setup() {
+void setup()
+{
   //debug led setup
   pinMode(debug_led, OUTPUT);
   digitalWrite(debug_led, LOW);
@@ -84,10 +86,14 @@ void setup() {
   led_bar[2] = 0xCD;
 
   //configure semaphores
-  if (xLedDisableSemaphore == NULL){ //confirm semaphore wasn't already made
+  if (xLedDisableSemaphore == NULL)
+  { 
+    //confirm semaphore wasn't already made
     xLedDisableSemaphore = xSemaphoreCreateBinary();
   }
-  if (xAdcUpdateSemaphore == NULL){ //confirm semaphore wasn't already made
+  if (xAdcUpdateSemaphore == NULL)
+  { 
+    //confirm semaphore wasn't already made
     xAdcUpdateSemaphore = xSemaphoreCreateBinary();
   }
 
@@ -120,14 +126,9 @@ void setup() {
   );
 }
 
-void loop() {
-  /*
-  * Since we are using an RTOS all work to be done is placed into tasks.
-  * Therefore nothing needs to go here. Unless we needed to do some background
-  * work when no other high priority tasks were working we could do that here.
-  * Otherwise we can conserve energy by sleeping the MCU whenever we enter this
-  * loop.
-  */
+void loop()
+{
+  //All work is done in RTOS tasks. No code should be placed here!
 }
 
 /***** System Control Functions *****/
@@ -138,14 +139,16 @@ void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uin
 
   //package argument details into buffer
   //if leds are common cathode pass color values as-is
-  if (range_type == NORMAL_RANGE){
+  if (range_type == NORMAL_RANGE)
+  {
     buffer[1] = bar_addr;
     buffer[2] = red * light_dimness;
     buffer[3]= green * light_dimness;
     buffer[4] = blue * light_dimness;
   }
   //if leds are common anode reverse the color values
-  else if (range_type == FLIPPED_RANGE){
+  else if (range_type == FLIPPED_RANGE)
+  {
     buffer[1] = bar_addr;
     buffer[2] = EIGHTBITMAX - red;
     buffer[3]= EIGHTBITMAX - green;
@@ -158,7 +161,8 @@ void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uin
   //post semaphore
 } //end of setBarColor()
 
-void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[]){
+void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[])
+{
   //loop through the number of bars and send a message to turn off
   for (int i = 0; i < led_bar_count; i++){
     setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
@@ -170,8 +174,17 @@ void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[]){
 //function to trigger animation disabling and 5 second timeout
 //on receiver interrupt
 void rcvrISR(void){
-  //post led_disable_semaphore
-  xSemaphoreGiveFromISR(xLedDisableSemaphore, NULL);
+  if (!timer_already_running)
+  {
+    //post led_disable_semaphore
+    xSemaphoreGiveFromISR(xLedDisableSemaphore, NULL);
+  }
+  else //if timer is currently active reset its counter
+  {
+    timeout_counter = 0;
+    timer_counter = 0;
+  }
+  
 } //end of rcvrISR()
 
 void adcISR(void){
@@ -235,6 +248,11 @@ void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
     //pend on led_disable_semaphore
     if (xSemaphoreTake(xLedDisableSemaphore, portMAX_DELAY) == pdTRUE)
     {
+      //signal that timeout is currently running, this fixes bug where
+      //2 successive interrupts cause a 10 second cooldown instead of 5 after
+      //the last
+      timer_already_running = 1;
+      
       //loop through led bars and send message to disable animation
       disableLedBars(LED_BAR_COUNT, led_bar);
       
@@ -252,6 +270,7 @@ void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
       xTaskResumeAll();
       timer_done = 0;
     }
+    timer_already_running = 0;
   }
 }
 
