@@ -149,6 +149,9 @@ void loop()
 
 void setBarColor(uint8_t bar_addr, uint8_t red, uint8_t green, uint8_t blue, uint8_t range_type){
   //pend semaphore
+  //0xAA signals start of lighting packet
+  //0xAC signals ack packet
+  //0xBB signals end of any packet
   uint8_t buffer[] = {0xAA, 0x00, 0x00, 0x00, 0x00, 0xBB};
 
   //package argument details into buffer
