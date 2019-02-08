@@ -47,8 +47,8 @@ float light_dimness = 1;
 volatile uint8_t cooldown_done = 0; //signal to resume normal animation
 volatile uint8_t timer_counter = 0; // counter used for 1 second timing
 volatile uint8_t cooldown_counter = 0; //counter used during cooldown
-volatile uint16_t time_since_last_rcvr_int = 1798; //used for triggering low power mode
-volatile uint16_t lowpower_counter = 118; // used for low power mode timing
+volatile uint16_t time_since_last_rcvr_int = 0; //used for triggering low power mode
+volatile uint16_t lowpower_counter = 0; // used for low power mode timing
 volatile uint8_t cooldown_already_running = FALSE;
 volatile uint8_t animation_disable = FALSE; //signal to disable animations
 volatile uint8_t lowpower_sleep = FALSE; //use for actual sleeping during low power mode
@@ -230,7 +230,7 @@ ISR (TIMER2_OVF_vect)
     if (time_since_last_rcvr_int == 1800) //if 30m have passed
     {
       lowpower_mode_active = TRUE;
-      //lowpower_counter = 0;
+      lowpower_counter = 0;
       lowpower_sleep = FALSE;
     }
     
