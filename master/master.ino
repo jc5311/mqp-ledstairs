@@ -39,7 +39,6 @@
 uint8_t debug_led = 13;
 uint8_t debug_toggle = 0;
 uint8_t rcvr_interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
-uint8_t adc_interrupt_pin = 3; //only p2 and p3 can be used for interrupt on nano
 uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
 uint8_t toggler = 0;
 float light_dimness = 1;
@@ -83,9 +82,6 @@ void setup()
   pinMode(rcvr_interrupt_pin, INPUT_PULLUP);
   //attach interrupt to the interrupt pin and configure trigger on falling edge
   attachInterrupt(digitalPinToInterrupt(rcvr_interrupt_pin), rcvrISR, FALLING);
-  //do the same for the adc for demoing
-  pinMode(adc_interrupt_pin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(adc_interrupt_pin), adcISR, FALLING);
 
   /********** Configure and start serial port **********/
   Serial.begin(BAUD_RATE);
@@ -209,11 +205,6 @@ void rcvrISR(void){
   }
   
 } //end of rcvrISR()
-
-void adcISR(void){
-  //post adc_update semaphore
-  xSemaphoreGiveFromISR(xAdcUpdateSemaphore, NULL);
-}
 
 //interrupt service routine for timer 2
 ISR (TIMER2_OVF_vect)
