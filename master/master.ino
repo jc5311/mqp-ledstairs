@@ -49,6 +49,7 @@ volatile uint8_t timer_counter = 0; // counter used for 1 second timing
 volatile uint8_t cooldown_counter = 0; //counter used during cooldown
 volatile uint16_t time_since_last_rcvr_int = 0; //used for triggering low power mode
 volatile uint16_t lowpower_counter = 0; // used for low power mode timing
+volatile uint16_t adc_counter = 3599; //trigger brightness update; trigger on startup
 volatile uint8_t cooldown_already_running = FALSE;
 volatile uint8_t animation_disable = FALSE; //signal to disable animations
 volatile uint8_t lowpower_sleep = FALSE; //use for actual sleeping during low power mode
@@ -226,6 +227,7 @@ ISR (TIMER2_OVF_vect)
     timer_counter = 0;
 
     //incremement and check counter for time since last receiver interrupt
+    //to enable low power mode
     time_since_last_rcvr_int++;
     if (time_since_last_rcvr_int == 1800) //if 30m have passed
     {
@@ -234,6 +236,7 @@ ISR (TIMER2_OVF_vect)
       lowpower_sleep = FALSE;
     }
     
+    //low power mode handler
     if (lowpower_mode_active == TRUE)
     {
       if (lowpower_sleep)
@@ -258,8 +261,9 @@ ISR (TIMER2_OVF_vect)
       lowpower_counter++;
     }
 
-    //increment and check count for time since last adc read
-    //when disable animation task is active
+
+    //if animation_disable is set due to receiver interrupt,
+    //handle its timing    
     if (animation_disable == TRUE)
     {
       //do all animation disable (trip sensor) stuff here
@@ -270,8 +274,13 @@ ISR (TIMER2_OVF_vect)
       }
     }
 
-    //this might go here, this is for resetting the one second signal
-    timer_counter = 0;
+    //handle adc updates every hour
+    adc_counter++;
+    if (adc_counter == 3600) //if an hour has passed
+    {
+      adc_counter = 0;
+      xSemaphoreGiveFromISR(xAdcUpdateSemaphore, NULL);
+    }
   }
 
 }
