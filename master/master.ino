@@ -44,13 +44,13 @@ uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
 uint8_t toggler = 0;
 float light_dimness = 1;
 //variables used in interrupts must ALWAYS be declared as volatile
-volatile uint8_t cooldown_done = 0;
-volatile uint8_t timer_counter = 0;
-volatile uint8_t cooldown_counter = 0;
-volatile uint16_t time_since_last_rcvr_int = 0;
-volatile uint16_t lowpower_counter = 0;
-volatile uint8_t timer_already_running = FALSE;
-volatile uint8_t animation_disable = FALSE;
+volatile uint8_t cooldown_done = 0; //signal to resume normal animation
+volatile uint8_t timer_counter = 0; // counter used for 1 second timing
+volatile uint8_t cooldown_counter = 0; //counter used during cooldown
+volatile uint16_t time_since_last_rcvr_int = 1798; //used for triggering low power mode
+volatile uint16_t lowpower_counter = 118; // used for low power mode timing
+volatile uint8_t cooldown_already_running = FALSE;
+volatile uint8_t animation_disable = FALSE; //signal to disable animations
 volatile uint8_t lowpower_sleep = FALSE; //use for actual sleeping during low power mode
 volatile uint8_t lowpower_mode_active = FALSE;
 
@@ -62,7 +62,7 @@ void rcvrISR(void);
 void cooldownTimer(void);
 //rtos tasks
 void TaskAnimate(void* pvParameters);
-void TaskAnimationDisable(void* pvParameters);
+void Cooldown(void* pvParameters);
 void TaskReadAdcBrightness(void* pvParameters);
 
 //rtos semaphores
@@ -125,7 +125,7 @@ void setup()
   );
 
   xTaskCreate(
-    TaskAnimationDisable,
+    TaskLedDisable,
     (const portCHAR *)"Disable Animations",
     128, //stack size
     NULL,
@@ -145,7 +145,7 @@ void setup()
 
 void loop()
 {
-  //All work is done in RTOS tasks. No code should be placed here!
+  //We are using an rtos therefore all work should be placed in tasks!
 }
 
 /********** System Control Functions **********/
@@ -191,7 +191,7 @@ void disableLedBars(uint8_t led_bar_count, uint8_t led_bar[])
 //function to trigger animation disabling and 5 second timeout
 //on receiver interrupt
 void rcvrISR(void){
-  if (!timer_already_running)
+  if (!cooldown_already_running)
   {
     //absolutely disable lowpower_mode
     lowpower_mode_active = FALSE;
@@ -230,7 +230,7 @@ ISR (TIMER2_OVF_vect)
     if (time_since_last_rcvr_int == 1800) //if 30m have passed
     {
       lowpower_mode_active = TRUE;
-      lowpower_counter = 0;
+      //lowpower_counter = 0;
       lowpower_sleep = FALSE;
     }
     
@@ -251,6 +251,7 @@ ISR (TIMER2_OVF_vect)
         {
           lowpower_counter = 0;
           lowpower_sleep = TRUE;
+          xSemaphoreGiveFromISR(xLedDisableSemaphore, NULL);
           vTaskSuspend(xAnimateHandle); //suspend animation task
         }
       }
@@ -258,7 +259,6 @@ ISR (TIMER2_OVF_vect)
     }
 
     //increment and check count for time since last adc read
-
     //when disable animation task is active
     if (animation_disable == TRUE)
     {
@@ -299,7 +299,7 @@ void TaskAnimate(void *pvParameters __attribute__((unused)) ){
 }
 
 //disable animations and wait until signal to animate is given
-void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
+void TaskLedDisable(void *pvParameters __attribute__((unused)) )
 {
   (void) pvParameters;
   
@@ -308,25 +308,32 @@ void TaskAnimationDisable(void *pvParameters __attribute__((unused)) )
     //pend on led_disable_semaphore
     if (xSemaphoreTake(xLedDisableSemaphore, portMAX_DELAY) == pdTRUE)
     {
-      //signal that timeout is currently running, this fixes bug where
-      //2 successive interrupts cause a 10 second cooldown instead of 5 after
-      //the last
-      timer_already_running = TRUE;
-      
-      //loop through led bars and send message to disable animation
-      disableLedBars(LED_BAR_COUNT, led_bar);
-      
-      //set signal for timer to acknowledge animation disable
-      animation_disable = TRUE;
+      if (lowpower_sleep)
+      {
+        disableLedBars(LED_BAR_COUNT, led_bar);
+      }
+      else
+      {
+        //signal that timeout is currently running, this fixes bug where
+        //2 successive interrupts cause a 10 second cooldown instead of 5 after
+        //the last
+        cooldown_already_running = TRUE;
+        
+        //loop through led bars and send message to disable animation
+        disableLedBars(LED_BAR_COUNT, led_bar);
+        
+        //set signal for timer to acknowledge animation disable
+        animation_disable = TRUE;
 
-      //loop until timer complete
-      vTaskSuspend(xAnimateHandle); //suspend animation task
-      while (cooldown_done != TRUE);
-      vTaskResume(xAnimateHandle); //resume animation task
-      cooldown_done = FALSE; //reset the cooldown_done signal
+        //loop until timer complete
+        vTaskSuspend(xAnimateHandle); //suspend animation task
+        while (cooldown_done != TRUE);
+        vTaskResume(xAnimateHandle); //resume animation task
+        cooldown_done = FALSE; //reset the cooldown_done signal
+        cooldown_already_running = FALSE;
+        animation_disable = FALSE;
+      }
     }
-    timer_already_running = FALSE;
-    animation_disable = FALSE;
   }
 }
 
