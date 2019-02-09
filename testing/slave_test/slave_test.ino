@@ -1,11 +1,24 @@
+#include <NeoSWSerial.h>
 
-uint8_t sent_own = 0;
-uint8_t to_send = 0;
-uint8_t received_continue = 0;
-uint8_t received_done = 0;
+//globals
+
+//library dependent definitions
+NeoSWSerial ss( ssrx_pin, sstx_pin);
 
 void setup()
 {
+  //configure serial
+  Serial.begin(115200);
+  ss.begin(9600);
+
+  //configure and start timer
+  TCCR2B = 0 << CS20; //timer clock => disable for configuration
+  TIFR2 = 1 << TOV2; //clear the overflow flag
+  TIMSK2 = 1 << TOIE2; //enable timer interrupts
+  TCNT2 = 0x00; //clear timer0 counter
+  TCCR2B = (1 << CS22) | (1 << CS21) | (1 << CS20); //start timer with 1024 prescaler
+  
+  //setup loop
 
 }
 
@@ -15,7 +28,7 @@ void loop()
 }
 
 //receive data from master and update color array
-void serialRcv(void){
+uint8_t serialRcv(void){
   Serial.println("Entered serialRcv()");
   //initialize neccesary variables
   uint8_t rcv_in_progress = FALSE;
@@ -76,18 +89,26 @@ void serialRcv(void){
   
   } //end of while loop
 
-  if (data_available == TRUE && return_buffer[0] == id){
-    color_array[0] = return_buffer[1];
-    color_array[1] = return_buffer[2];
-    color_array[2] = return_buffer[3];
+  if (rcv_color)
+  {
+    if (data_available == TRUE && return_buffer[0] == id){
+      color_array[0] = return_buffer[1];
+      color_array[1] = return_buffer[2];
+      color_array[2] = return_buffer[3];
+    }
+    return 1;
   }
-    return;
+  else if (rcv_cont)
+  {
+    return 2; //signal continue
+  }
+  return 0;
 }
 
 //process serial packet and return the received address
 char sSerialRx(void)
 {
-    Serial.println("Entered serialRcv()");
+  ss.println("Entered serialRcv()");
   //initialize neccesary variables
   uint8_t rcv_in_progress = FALSE;
   uint8_t data_available = FALSE;

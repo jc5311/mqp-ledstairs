@@ -34,6 +34,8 @@
 #define COOLDOWN_PERIOD 5 //timer cooldown period (in seconds)
 #define TRUE 1
 #define FALSE 0
+#define UP 1
+#define DOWN 0
 
 //globals
 uint8_t debug_led = 13;
@@ -49,6 +51,8 @@ volatile uint8_t cooldown_counter = 0; //counter used during cooldown
 volatile uint16_t time_since_last_rcvr_int = 0; //used for triggering low power mode
 volatile uint16_t lowpower_counter = 0; // used for low power mode timing
 volatile uint16_t adc_counter = 3599; //trigger brightness update; trigger on startup
+volatile uint16_t anim_clock = 0;
+volatile uint16_t start_anim_clock = FALSE;
 volatile uint8_t cooldown_already_running = FALSE;
 volatile uint8_t animation_disable = FALSE; //signal to disable animations
 volatile uint8_t lowpower_sleep = FALSE; //use for actual sleeping during low power mode
@@ -217,6 +221,12 @@ ISR (TIMER2_OVF_vect)
   //if a second has passed
   if (timer_counter == 30)
   {
+    //used for animations if they need it
+    if (start_anim_clock == TRUE)
+    {
+      anim_clock++;
+    }
+
     //reset the one second signal
     timer_counter = 0;
 
@@ -287,18 +297,31 @@ void TaskAnimate(void *pvParameters __attribute__((unused)) ){
   {    
     //loop and send animation messages to everyone
     setBarColor(led_bar[0], 232, 12, 122, NORMAL_RANGE);
-    delay(250);
+    delay(100);
     setBarColor(led_bar[1], 0, 255, 0, NORMAL_RANGE);
-    delay(250);
+    delay(100);
     setBarColor(led_bar[2], 0, 0, 255, NORMAL_RANGE);
-    delay(250);
+    delay(100);
     setBarColor(led_bar[0], 0, 0, 0, NORMAL_RANGE);
-    delay(250);
+    delay(100);
     setBarColor(led_bar[1], 0, 0, 0, NORMAL_RANGE);
-    delay(250);
+    delay(100);
     setBarColor(led_bar[2], 0, 0, 0, NORMAL_RANGE);
-    delay(250);
-    //rainbowAnim();
+    delay(100);
+    //flip
+    setBarColor(led_bar[2], 0, 0, 255, NORMAL_RANGE);
+    delay(100);
+    setBarColor(led_bar[1], 0, 255, 0, NORMAL_RANGE);
+    delay(100);
+    setBarColor(led_bar[0], 232, 12, 122, NORMAL_RANGE);
+    delay(100);
+    setBarColor(led_bar[2], 0, 0, 0, NORMAL_RANGE);
+    delay(100);
+    setBarColor(led_bar[1], 0, 0, 0, NORMAL_RANGE);
+    delay(100);
+    setBarColor(led_bar[0], 0, 0, 0, NORMAL_RANGE);
+    delay(100);
+    rainbowAnim();
   }
 }
 
@@ -381,105 +404,124 @@ void TaskReadAdcBrightness(void* pvParameters __attribute__((unused)) ){
     }
   }
 }
-/*
+
 void rainbowAnim(void)
 {
   // rainbow func
 
   // Define Variables
   uint8_t i = 0;
-  uint8_t r = 255;
-  uint8_t g = 0;
-  uint8_t b = 0;
-  uint8_t case = 1;
-  uint16_t t = timer;
+  int16_t r = 255;
+  int16_t g = 0;
+  int16_t b = 0;
+  uint8_t case_l = 1;
+  //uint16_t t = timer;
   // dir is direction, 1 up and 0 down
   uint8_t dir = 1;
+  uint8_t at_end = FALSE; //if at top or bottom
 
   //start timer
-
+  start_anim_clock = TRUE;
   // 5 minute while loop
-  while (t < 300000) 
+  while (anim_clock < 300000) 
   {
 
     // Switching between color incrementing
-      switch(case) {
-        case 1:
-          setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
-          g = g + 30;
-          if (g >= 255) {
-            g = 255;
-            case = 2;
-          }
-          break;
-          
-        case 2:
-          setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
-          r = r - 30;
-          if (r <= 0) {
-            r = 0;
-            case = 3;
-          }
-          break;
-          
-        case 3:
-          setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
-          b = b + 30;
-          if (b >= 255) {
-            b = 255;
-            case = 4;
-          }
-          break;
-          
-        case 4:
-          setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
-          g = g - 30;
-          if (g <= 0) {
-            g = 0;
-            case = 5;
-          }
-          break;    
-          
-        case 5:
-          setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
-          r = r + 30;
-          if (r >= 255) {
-            r = 255;
-            case = 6;
-          }
-          break;
-          
-        case 6:
-          setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
-          b = b - 30;
-          if (b <= 0) {
-            b = 0;
-            case = 1;
-          }
-          break; 
-      }
-      
-    // Tells direction of animation
-      if (dir == 1){
-        if (i == LED_BAR_COUNT) {
-          dir = 0;
-          }
-        i = i + 1;
+    switch(case_l) {
+      case 1: //add green to red
+        setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
+        g = g + 30;
+        if (g >= 255) {
+          g = 255;
+          case_l = 2;
         }
-      else {
-        if (i == 1) {
-          dir = 1;
-          }
-        i = i - 1;
-        }
+        break;
         
-    // Starts turning off Light bars once three are on at a time
-      if (t > 2) {
-        setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
+      case 2: //remove red from green
+        setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
+        r = r - 30;
+        if (r <= 0) {
+          r = 0;
+          case_l = 3;
         }
-        
-    // Delays one second
-      delay(1000);
-  }
-}*/
+        break;
 
+      case 3: //add blue to green
+        setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
+        b = b + 30;
+        if (b >= 255) {
+          b = 255;
+          case_l = 4;
+        }
+        break;
+        
+      case 4: //take out green from blue
+        setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
+        g = g - 30;
+        if (g <= 0) {
+          g = 0;
+          case_l = 5;
+        }
+        break;   
+        
+      case 5: //add red to blue
+        setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
+        r = r + 30;
+        if (r >= 255) {
+          r = 255;
+          case_l = 6;
+        }
+        break;
+        
+      case 6: //take out blue from red
+        setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
+        b = b - 30;
+        if (b <= 0) {
+          b = 0;
+          case_l = 1;
+        }
+        break;
+    }
+      
+  // Starts turning off Light bars once three are on at a time
+    if (anim_clock > 2) {
+      if (at_end == 1){
+        at_end = 0;
+        if (dir == UP)
+        {
+          i++;
+        }
+        else
+        {
+          i--;
+        }
+        
+      }
+      else if (i == LED_BAR_COUNT-1){
+        setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
+        at_end = 1;
+        dir = DOWN;
+        i--;
+      }
+      else if (i == 0){
+        setBarColor(led_bar[i+2], 0, 0, 0, NORMAL_RANGE);
+        at_end = 1;
+        dir = UP;
+        i++;
+      }
+      else if (dir == 0){
+        setBarColor(led_bar[i+2], 0, 0, 0, NORMAL_RANGE);
+        i--;
+      }
+      else if (dir == 1){
+        setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
+        i++;
+      }
+    }
+    // Delays one second
+    delay(1000);
+  }
+  //use this to time the animation for now
+  start_anim_clock = FALSE;
+  anim_clock = 0;
+}
