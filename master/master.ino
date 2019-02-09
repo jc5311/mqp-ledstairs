@@ -483,43 +483,41 @@ void rainbowAnim(void)
         break;
     }
       
-  // Starts turning off Light bars once three are on at a time
-    if (anim_clock > 2) {
-      if (at_end == 1){
-        at_end = 0;
-        if (dir == UP)
-        {
-          i++;
-        }
-        else
-        {
-          i--;
-        }
-        
-      }
-      else if (i == LED_BAR_COUNT-1){
-        setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
-        at_end = 1;
-        dir = DOWN;
-        i--;
-      }
-      else if (i == 0){
-        setBarColor(led_bar[i+2], 0, 0, 0, NORMAL_RANGE);
-        at_end = 1;
-        dir = UP;
+    // Starts turning off Light bars once three are on at a time
+    if (at_end == 1){
+      at_end = 0;
+      if (dir == UP)
+      {
         i++;
       }
-      else if (dir == 0){
-        setBarColor(led_bar[i+2], 0, 0, 0, NORMAL_RANGE);
+      else
+      {
         i--;
       }
-      else if (dir == 1){
-        setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
-        i++;
-      }
+      
+    }
+    else if (i == LED_BAR_COUNT-1){
+      setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
+      at_end = 1;
+      dir = DOWN;
+      i--;
+    }
+    else if (i == 0){
+      setBarColor(led_bar[i+2], 0, 0, 0, NORMAL_RANGE);
+      at_end = 1;
+      dir = UP;
+      i++;
+    }
+    else if (dir == 0){
+      setBarColor(led_bar[i+2], 0, 0, 0, NORMAL_RANGE);
+      i--;
+    }
+    else if (dir == 1){
+      setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
+      i++;
     }
     // Delays one second
-    delay(1000);
+    delay(500);
   }
   //use this to time the animation for now
   start_anim_clock = FALSE;
