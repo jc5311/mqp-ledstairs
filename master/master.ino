@@ -321,7 +321,7 @@ void TaskAnimate(void *pvParameters __attribute__((unused)) ){
     delay(100);
     setBarColor(led_bar[0], 0, 0, 0, NORMAL_RANGE);
     delay(100);
-    rainbowAnim();
+    rain_travel();
   }
 }
 
@@ -518,6 +518,459 @@ void rainbowAnim(void)
     }
     // Delays one second
     delay(500);
+  }
+  //use this to time the animation for now
+  start_anim_clock = FALSE;
+  anim_clock = 0;
+}
+
+
+
+void colorMix (void) 
+{
+
+  // colorMix func
+
+  // Define Variables
+
+  // Counter
+  int16_t i;
+  
+  // Define two colors by randoming selecting rgb values
+  int16_t r1;
+  int16_t g1;
+  int16_t b1;
+  int16_t r2;
+  int16_t g2;
+  int16_t b2;
+
+  // Mixed values
+  int16_t r3;
+  int16_t b3;
+  int16_t g3;
+    
+  // Percent of r3, b3. and g3 to fade
+  int16_t r_fade_perc;
+  int16_t b_fade_perc;
+  int16_t g_fade_perc;
+
+  // Cases for what to light up
+  uint8_t case_m = 1;
+  
+  //uint16_t t = timer;
+
+  //start timer
+  start_anim_clock = TRUE;
+  
+  // 5 minute while loop
+  while (anim_clock < 300000) {
+
+    switch(case_m) {
+      // Initialize values
+      case 1:
+        // Set counter to zero
+        i = 0;
+        
+        // Set initial random rgb values
+        r1 = rand() % 127;
+        g1 = rand() % 127;
+        b1 = rand() % 127;
+        r2 = rand() % 127;
+        g2 = rand() % 127;
+        b2 = rand() % 127;
+        
+        // Add the two r values for the mixed value of r
+        r3 = r1 + r2;
+          
+        // Add the two b values for the mixed value of b
+        b3 = b1 + b2;
+         
+        // Add the two g values for the mixed value of g
+        g3 = g1 + g2;
+        
+        // Percent of r3, b3. and g3 to fade
+        r_fade_perc = r3 / (LED_BAR_COUNT/2);
+        b_fade_perc = b3 / (LED_BAR_COUNT/2);
+        g_fade_perc = g3 / (LED_BAR_COUNT/2);
+  
+        case_m = 2;
+  
+        break;
+      
+      // Before reaching the middle, turning LEDs on from top and bottom using colors 1 and 2
+      case 2:
+        setBarColor(led_bar[i], r1, g1, b1, NORMAL_RANGE);
+        setBarColor(led_bar[LED_BAR_COUNT - i - 1], r2, g2, b2, NORMAL_RANGE);
+        delay(1000);
+        
+        // Turn off LEDs three away
+        if (i >= 3) {
+          setBarColor(led_bar[i-3], 0, 0, 0, NORMAL_RANGE);
+          setBarColor(led_bar[LED_BAR_COUNT - i + 2], 0, 0, 0, NORMAL_RANGE);
+        } //end if (turn off LEDs)
+
+        i++;
+
+        // Check if met middle
+        // If LED_BAR_COUNT is even
+        if (i >= LED_BAR_COUNT - i - 1) {
+          // If LED_BAR_COUNT is even
+          if (LED_BAR_COUNT % 2 == 0) {
+            case_m = 3;
+          }
+          // If LED_BAR_COUNT is odd
+          else {
+            case_m = 4;
+          }
+        }
+
+        break;
+        
+      // Reached middle (even), setting LEDs to new color and turning off past LEDs
+      case 3:
+        // Set middle value(s) to one third of the mixed color
+        setBarColor(led_bar[i], r3/3, g3/3, b3/3, NORMAL_RANGE);
+        setBarColor(led_bar[LED_BAR_COUNT - i - 1], r3/3, g3/3, b3/3, NORMAL_RANGE);
+        delay(1000);
+        
+        // Turn off LEDs 2 away from middle(s) and set middle value(s) to two thirds of the mixed color
+        setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
+        setBarColor(led_bar[LED_BAR_COUNT - i + 1], 0, 0, 0, NORMAL_RANGE);
+        setBarColor(led_bar[i], 2*r3/3, 2*g3/3, 2*b3/3, NORMAL_RANGE);
+        setBarColor(led_bar[LED_BAR_COUNT - i - 1], 2*r3/3, 2*g3/3, 2*b3/3, NORMAL_RANGE);
+        delay(1000);
+        
+        // Turn off LEDs 1 away from middle(s) and set middle value(s) to two thirds of the mixed color
+        setBarColor(led_bar[i-1], 0, 0, 0, NORMAL_RANGE);
+        setBarColor(led_bar[LED_BAR_COUNT - i], 0, 0, 0, NORMAL_RANGE);
+        setBarColor(led_bar[i], r3, g3, b3, NORMAL_RANGE);
+        setBarColor(led_bar[LED_BAR_COUNT - i - 1], r3, g3, b3, NORMAL_RANGE);
+        delay(1000);
+
+        case_m = 5;
+        i++;
+
+        break;
+
+      // Reached middle (odd), setting LEDs to new color and turning off past LEDs
+      case 4:
+        // Set middle value(s) to one third of the mixed color
+        setBarColor(led_bar[i], r3/3, g3/3, b3/3, NORMAL_RANGE);
+        delay(1000);
+        
+        // Turn off LEDs 2 away from middle(s) and set middle value(s) to two thirds of the mixed color
+        setBarColor(led_bar[i+2], 0, 0, 0, NORMAL_RANGE);
+        setBarColor(led_bar[i-2], 0, 0, 0, NORMAL_RANGE);
+        setBarColor(led_bar[i], 2*r3/3, 2*g3/3, 2*b3/3, NORMAL_RANGE);
+        delay(1000);
+        
+        // Turn off LEDs 1 away from middle(s) and set middle value(s) to two thirds of the mixed color
+        setBarColor(led_bar[i+1], 0, 0, 0, NORMAL_RANGE);
+        setBarColor(led_bar[i-1], 0, 0, 0, NORMAL_RANGE);
+        setBarColor(led_bar[i], r3, g3, b3, NORMAL_RANGE);
+        delay(1000);
+
+        case_m = 5;
+        i++;
+
+        break;
+
+      // Past middle, setting new color to LEDs
+      case 5:
+        // Set new color to LEDs
+        setBarColor(led_bar[i], r3, g3, b3, NORMAL_RANGE);
+        setBarColor(led_bar[LED_BAR_COUNT - i - 1], r3, g3, b3, NORMAL_RANGE);
+        delay(1000);
+        
+        // Turn off LEDs 3 away
+        if (i >= LED_BAR_COUNT - i + 5) {
+          setBarColor(led_bar[i-3], 0, 0, 0, NORMAL_RANGE);
+          setBarColor(led_bar[LED_BAR_COUNT - i + 2], 0, 0, 0, NORMAL_RANGE);
+        } // end if (turn off LEDs)
+        
+        // Fade out color
+        r3 = r3 - r_fade_perc;
+        b3 = b3 - b_fade_perc;
+        g3 = g3 - g_fade_perc;
+
+        // Restart when all LEDs have been truned off
+        if (i == LED_BAR_COUNT + 2) {
+          case_m = 1;
+        }
+        else {
+          i++;
+        }
+
+        break;
+    } // end case
+    
+  } //end while
+  
+  //use this to time the animation for now
+  start_anim_clock = FALSE;
+  anim_clock = 0;
+} //end function
+
+
+void travel(int r, int b, int g, int num_leds)
+{
+  for (int i = 0; i <= num_leds; i++){
+    if (i == 0){
+      setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
+      delay(250);
+    }
+    else {
+      setBarColor(led_bar[i], r, g, b, NORMAL_RANGE);
+      delay(250);
+      setBarColor(led_bar[i-1], 0, 0, 0, NORMAL_RANGE);
+    }
+  }
+}
+
+void rain_travel(void)
+{
+  // traveling rainbow func
+
+  // Define Variables
+  int16_t i = LED_BAR_COUNT - 1;
+  int16_t r = 255;
+  int16_t g = 0;
+  int16_t b = 0;
+  uint8_t case_t = 1;
+  //incrementing color
+  int16_t color_inc = 1530/LED_BAR_COUNT;
+
+  //start timer
+  start_anim_clock = TRUE;
+  // 5 minute while loop
+  while (anim_clock < 300000) 
+  {
+    // Initial Color Set
+    switch(case_t) {
+      case 1: //add green to red
+        travel(r, b, g, i);
+        g = g + color_inc;
+        if (g >= 255) {
+          g = 255;
+          case_t = 2;
+        }
+        break;
+        
+      case 2: //remove red from green
+        travel(r, b, g, i);
+        r = r - color_inc;
+        if (r <= 0) {
+          r = 0;
+          case_t = 3;
+        }
+        break;
+
+      case 3: //add blue to green
+        travel(r, b, g, i);
+        b = b + color_inc;
+        if (b >= 255) {
+          b = 255;
+          case_t = 4;
+        }
+        break;
+        
+      case 4: //take out green from blue
+        travel(r, b, g, i);
+        g = g - color_inc;
+        if (g <= 0) {
+          g = 0;
+          case_t = 5;
+        }
+        break;   
+        
+      case 5: //add red to blue
+        travel(r, b, g, i);
+        r = r + color_inc;
+        if (r >= 255) {
+          r = 255;
+          case_t = 6;
+        }
+        break;
+        
+      case 6: //take out blue from red
+        travel(r, b, g, i);
+        b = b - color_inc;
+        if (b <= 0) {
+          b = 0;
+          case_t = 1;
+        }
+        break;
+      case 7: //Turn off LEDs
+        for (int j = LED_BAR_COUNT - 1; j >= 0; j--) {
+          setBarColor(led_bar[j], 0, 0, 0, NORMAL_RANGE);
+          delay(250);
+        }
+        case_t = 1;
+        break;
+    }
+      
+    // Starts turning off Light bars once three are on at a time
+    if (i == 0) {
+      case_t = 7;
+      i = LED_BAR_COUNT;
+      r = 255;
+      g = 0;
+      b = 0;
+    }
+    else {
+      i--;
+    }
+  }
+  //use this to time the animation for now
+  start_anim_clock = FALSE;
+  anim_clock = 0;
+}
+
+void ak_stairs(void)
+{
+  // message func
+
+  // Define Variables
+  // Message incrementer
+  int16_t j = 0;
+  int16_t temp;
+  //Switch case
+  uint8_t case_mess = 1;
+
+  //start timer
+  start_anim_clock = TRUE;
+  // 5 minute while loop
+  while (anim_clock < 300000) 
+  {
+    // Message
+    int message[63] = {1,0,0,0,0,0,1,1,1,0,1,0,0,1,0,0,0,0,0,1,0,1,1,0,0,1,0,1,0,0,1,0,1,1,1,1,0,0,0,0,1,1,1,0,0,1,0,1,1,0,1,0,0,1,1,1,1,1,0,0,1,1,1};
+    while (j <= 62) 
+    {
+      //Write A in Red
+      for (int i = 0; i <= LED_BAR_COUNT - 1; i++) {
+        switch (case_mess) {
+          // ASCII Char in Red
+          case 1:
+            if (temp){
+              setBarColor(led_bar[i], 255, 0, 0, NORMAL_RANGE);
+            }
+            else {
+              setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
+            }
+            break;
+          // ASCII Char in Yellow
+          case 2:
+            if (temp){
+              setBarColor(led_bar[i], 255, 255, 0, NORMAL_RANGE);
+            } 
+            else {
+              setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
+            }
+            break;
+          // ASCII Char in Green
+          case 3:
+            if (temp){
+              setBarColor(led_bar[i], 0, 255, 0, NORMAL_RANGE);
+            } 
+            else {
+              setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
+            }
+            break;
+          // ASCII Char in Cyan
+          case 4:
+            if (temp){
+              setBarColor(led_bar[i], 0, 255, 255, NORMAL_RANGE);
+            } 
+            else {
+              setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
+            }
+            break;
+          // ASCII Char in Blue
+          case 5:
+            if (temp){
+              setBarColor(led_bar[i], 0, 0, 255, NORMAL_RANGE);
+            } 
+            else {
+              setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
+            }
+            break;
+          // ASCII Char in Violet
+          case 6:
+            if (temp){
+              setBarColor(led_bar[i], 255, 0, 255, NORMAL_RANGE);
+            } 
+            else {
+              setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
+            }
+            break;
+        }
+        j++;
+        temp = message[j];
+        if ((j <= 6) || (j > 41 && j <= 48)){
+          case_mess = 1;
+        }
+        else if ((j > 6 && j <= 13) || (j > 48 && j <= 55)){
+          case_mess = 2;
+        }
+        else if ((j > 13 && j <= 20) || (j > 55 && j <= 62)){
+          case_mess = 3;
+        }
+        else if (j > 20 && j <= 27){
+          case_mess = 4;
+        }
+        else if (j > 27 && j <= 34){
+          case_mess = 5;
+        }
+        else{
+          case_mess = 6;
+        }
+        
+      }
+      delay(1000);
+      for (int i = 0; i <= LED_BAR_COUNT - 1; i++){
+        setBarColor(led_bar[i], 0, 0, 0, NORMAL_RANGE);
+      }
+      j = j - LED_BAR_COUNT + 1;
+      temp = message[j];
+      if ((j <= 6) || (j > 41 && j <= 48)){
+        case_mess = 1;
+      }
+      else if ((j > 6 && j <= 13) || (j > 48 && j <= 55)){
+        case_mess = 2;
+      }
+      else if ((j > 13 && j <= 20) || (j > 55 && j <= 62)){
+        case_mess = 3;
+      }
+      else if (j > 20 && j <= 27){
+        case_mess = 4;
+      }
+      else if (j > 27 && j <= 34){
+        case_mess = 5;
+      }
+      else{
+        case_mess = 6;
+      }
+    }
+    j = 0;
+    temp = message[j];
+    if ((j <= 6) || (j > 41 && j <= 48)){
+      case_mess = 1;
+    }
+    else if ((j > 6 && j <= 13) || (j > 48 && j <= 55)){
+      case_mess = 2;
+    }
+    else if ((j > 13 && j <= 20) || (j > 55 && j <= 62)){
+      case_mess = 3;
+    }
+    else if (j > 20 && j <= 27){
+      case_mess = 4;
+    }
+    else if (j > 27 && j <= 34){
+      case_mess = 5;
+    }
+    else{
+      case_mess = 6;
+    }
   }
   //use this to time the animation for now
   start_anim_clock = FALSE;
