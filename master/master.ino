@@ -1,6 +1,6 @@
 /**
- * Author(s):    Juan Caraballo
- * Created:   1/16/19
+ * Author(s):    Juan Caraballo, Shannon McCormack
+ * Created:  3/4/19
  * Copyright 2019, Juan Caraballo, All rights reserved.
  * 
  * Description: This Arduino file implements the software for a master mcu device
