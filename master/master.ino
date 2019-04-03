@@ -41,6 +41,7 @@
 uint8_t debug_led = 13;
 uint8_t debug_toggle = 0;
 uint8_t rcvr_interrupt_pin = 2; //only p2 and p3 can be used for interrupt on nano
+uint8_t ambi_pin = A0; //pin used for ambient light sensing readings
 uint8_t led_bar[LED_BAR_COUNT]; //array to hold led bar addresses
 uint8_t toggler = 0;
 float light_dimness = 1;
@@ -378,7 +379,7 @@ void TaskReadAdcBrightness(void* pvParameters __attribute__((unused)) ){
     {
       //record ambient_brightness
       uint16_t reading;
-      reading = analogRead(A0);
+      reading = analogRead(ambi_pin);
 
       //calculate the dimming scale
       if (reading < 205){ 
